@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { Mail, Lock, User as UserIcon, ShieldCheck, Eye, EyeOff, ArrowLeft, ArrowRight, Sparkles, Chrome, AlertCircle, CheckCircle2, X } from 'lucide-react';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 const Login = ({ onLoginSuccess }) => {
     const [mode, setMode] = useState('login'); // 'login', 'register', 'forgot', 'reset'
     const [formData, setFormData] = useState({ username: '', email: '', password: '', resetToken: '', newPassword: '' });
@@ -20,21 +22,21 @@ const Login = ({ onLoginSuccess }) => {
 
         try {
             if (mode === 'login') {
-                const { data } = await axios.post('http://localhost:5000/users/login', { email: formData.email, password: formData.password });
+                const { data } = await axios.post(`${API_BASE_URL}/users/login`, { email: formData.email, password: formData.password });
                 localStorage.setItem('token', data.token);
                 localStorage.setItem('user', JSON.stringify(data.user));
                 onLoginSuccess(data.user);
             } else if (mode === 'register') {
-                await axios.post('http://localhost:5000/users/', { username: formData.username, email: formData.email, password: formData.password });
+                await axios.post(`${API_BASE_URL}/users/`, { username: formData.username, email: formData.email, password: formData.password });
                 setMode('login');
                 showToast('Vault created! Please sign in.', 'success');
             } else if (mode === 'forgot') {
-                const { data } = await axios.post('http://localhost:5000/users/forgot-password', { email: formData.email });
+                const { data } = await axios.post(`${API_BASE_URL}/users/forgot-password`, { email: formData.email });
                 showToast(data.message, 'success');
                 setMode('reset');
 
             } else if (mode === 'reset') {
-                await axios.post('http://localhost:5000/users/reset-password', {
+                await axios.post(`${API_BASE_URL}/users/reset-password`, {
                     email: formData.email,
                     resetToken: formData.resetToken,
                     newPassword: formData.newPassword

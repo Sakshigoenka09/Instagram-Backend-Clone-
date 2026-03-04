@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { X, Image, Tag, Send, Sparkles, ShieldCheck, Search, Users, ShieldAlert, Plus, Upload } from 'lucide-react';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 const CreatePost = ({ user, onClose, onPostCreated }) => {
     const [caption, setCaption] = useState('');
     const [file, setFile] = useState(null);
@@ -65,7 +67,7 @@ const CreatePost = ({ user, onClose, onPostCreated }) => {
             formData.append('image', file);
             formData.append('tags', JSON.stringify(selectedTags));
 
-            await axios.post('http://localhost:5000/posts/create', formData, {
+            await axios.post(`${API_BASE_URL}/posts/create`, formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data'
                 }

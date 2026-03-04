@@ -7,6 +7,8 @@ import {
 } from 'lucide-react';
 import CreatePost from './CreatePost';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 const Feed = ({ user, onLogout, onProfileClick }) => {
     const [posts, setPosts] = useState([]);
     const [followingUsers, setFollowingUsers] = useState([]);
@@ -20,9 +22,9 @@ const Feed = ({ user, onLogout, onProfileClick }) => {
 
     const fetchData = async () => {
         try {
-            const { data: feedData } = await axios.get(`http://localhost:5000/posts/feed?userId=${user._id}`);
-            const { data: storiesData } = await axios.get(`http://localhost:5000/posts/stories/${user._id}`);
-            const { data: tagData } = await axios.get(`http://localhost:5000/posts/tags/pending/${user._id}`);
+            const { data: feedData } = await axios.get(`${API_BASE_URL}/posts/feed?userId=${user._id}`);
+            const { data: storiesData } = await axios.get(`${API_BASE_URL}/posts/stories/${user._id}`);
+            const { data: tagData } = await axios.get(`${API_BASE_URL}/posts/tags/pending/${user._id}`);
 
             setPosts(feedData);
             setFollowingUsers(storiesData);
@@ -49,7 +51,7 @@ const Feed = ({ user, onLogout, onProfileClick }) => {
     const handleLike = async (postId, isLiked) => {
         try {
             const endpoint = isLiked ? 'unlike' : 'like';
-            await axios.post(`http://localhost:5000/posts/${postId}/${endpoint}`, { userId: user._id });
+            await axios.post(`${API_BASE_URL}/posts/${postId}/${endpoint}`, { userId: user._id });
             setPosts(posts.map(post => {
                 if (post._id === postId) {
                     const newLikes = isLiked
@@ -69,7 +71,7 @@ const Feed = ({ user, onLogout, onProfileClick }) => {
         if (!text || !text.trim()) return;
 
         try {
-            await axios.post(`http://localhost:5000/posts/${postId}/comment`, {
+            await axios.post(`${API_BASE_URL}/posts/${postId}/comment`, {
                 userId: user._id,
                 text
             });
@@ -82,7 +84,7 @@ const Feed = ({ user, onLogout, onProfileClick }) => {
 
     const handleTagAction = async (postId, status) => {
         try {
-            await axios.patch(`http://localhost:5000/posts/${postId}/tag`, {
+            await axios.patch(`${API_BASE_URL}/posts/${postId}/tag`, {
                 userId: user._id,
                 status
             });
@@ -95,7 +97,7 @@ const Feed = ({ user, onLogout, onProfileClick }) => {
     const handleDeletePost = async (postId) => {
         if (!window.confirm("Are you sure you want to delete this vibe from the vault?")) return;
         try {
-            await axios.delete(`http://localhost:5000/posts/${postId}`);
+            await axios.delete(`${API_BASE_URL}/posts/${postId}`);
             setPosts(posts.filter(p => p._id !== postId));
             setSelectedPostOptions(null);
         } catch (err) {
@@ -106,7 +108,7 @@ const Feed = ({ user, onLogout, onProfileClick }) => {
     const handleUpdatePost = async () => {
         if (!editingPost) return;
         try {
-            await axios.patch(`http://localhost:5000/posts/${editingPost._id}`, { caption: editCaption });
+            await axios.patch(`${API_BASE_URL}/posts/${editingPost._id}`, { caption: editCaption });
             setPosts(posts.map(p => p._id === editingPost._id ? { ...p, caption: editCaption } : p));
             setEditingPost(null);
             setEditCaption('');

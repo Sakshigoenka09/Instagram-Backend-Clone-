@@ -6,6 +6,8 @@ import {
     Home, Search, Plus, User, Shield, Video, UserPlus
 } from 'lucide-react';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 const Profile = ({ user, onBack, onAddPost }) => {
     const [profileData, setProfileData] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -14,7 +16,7 @@ const Profile = ({ user, onBack, onAddPost }) => {
     useEffect(() => {
         const fetchProfile = async () => {
             try {
-                const { data } = await axios.get(`http://localhost:5000/users/profile/${user._id}`);
+                const { data } = await axios.get(`${API_BASE_URL}/users/profile/${user._id}`);
                 setProfileData(data);
                 setLoading(false);
             } catch (err) {
