@@ -9,10 +9,8 @@ const createPost = async (req, res) => {
             return res.status(400).json({ error: "Image file and User ID are required" });
         }
 
-        // Use the current host instead of hardcoded localhost
-        const host = req.get('host');
-        const protocol = req.protocol;
-        const imagePath = `${protocol}://${host}/uploads/${req.file.filename}`;
+        // With Cloudinary, the URL is provided directly in req.file.path
+        const imagePath = req.file.path;
 
         // Parse tags if they are sent as a string (which sometimes happens with FormData)
         let parsedTags = [];
