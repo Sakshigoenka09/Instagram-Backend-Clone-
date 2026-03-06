@@ -7,10 +7,18 @@ const userRoutes = require("./routes/userRoutes");
 const postRoutes = require("./routes/postRoutes");
 
 const path = require("path");
+const fs = require('fs');
 const app = express();
 app.use(express.json());
 app.use(cors());
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
+// Ensure uploads directory exists
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir);
+}
+
+app.use("/uploads", express.static(uploadDir));
 
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("DB Connected"))

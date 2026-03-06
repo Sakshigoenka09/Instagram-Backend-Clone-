@@ -20,7 +20,7 @@ const CreatePost = ({ user, onClose, onPostCreated }) => {
 
         const fetchUsers = async () => {
             try {
-                const { data } = await axios.get('http://localhost:5000/users/');
+                const { data } = await axios.get(`${API_BASE_URL}/users/`);
                 setAllUsers(data.filter(u => u._id !== user._id));
             } catch (err) {
                 console.error(err);
