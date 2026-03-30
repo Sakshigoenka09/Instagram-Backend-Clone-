@@ -29,8 +29,10 @@ const createPost = async (req, res) => {
 
         return res.status(201).json(post);
     } catch (err) {
-        console.error(err);
-        return res.status(500).json({ error: "Something went wrong while creating the post" });
+        console.error("Full Error Details:", err.message);
+        console.error("Stack:", err.stack);
+        console.error("Raw Error Obj:", err);
+        return res.status(500).json({ error: "Something went wrong while creating the post", details: err.message });
     }
 };
 

@@ -27,6 +27,13 @@ mongoose.connect(process.env.MONGO_URI)
 app.use("/users", userRoutes);
 app.use("/posts", postRoutes);
 
+app.use((err, req, res, next) => {
+    console.error("====== GLOBAL ERROR ======");
+    console.error(err.message || err);
+    console.error(err.stack);
+    res.status(500).json({ error: "Internal Server Error", details: err.message || JSON.stringify(err) });
+});
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
