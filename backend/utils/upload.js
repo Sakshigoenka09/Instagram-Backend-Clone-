@@ -12,10 +12,9 @@ const storage = new CloudinaryStorage({
     cloudinary: cloudinary,
     params: {
         folder: 'instagram_clone',
-        allowed_formats: ['jpg', 'png', 'jpeg'],
+        allowed_formats: ['jpg', 'png', 'jpeg', 'webp', 'avif', 'gif'],
     },
 });
 
 const upload = multer({ storage: storage });
-
 module.exports = upload;
