@@ -115,6 +115,29 @@ const followUser = async (req, res) => {
   }
 };
 
+const unfollowUser = async (req, res) => {
+  try {
+    const { followerId, followingId } = req.body;
+
+    if (followerId === followingId) {
+      return res.status(400).json({ error: "You cannot unfollow yourself" });
+    }
+
+    await User.findByIdAndUpdate(followerId, {
+      $pull: { following: followingId },
+    });
+
+    await User.findByIdAndUpdate(followingId, {
+      $pull: { followers: followerId },
+    });
+
+    return res.status(200).json({ message: "Unfollowed successfully" });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Something went wrong" });
+  }
+};
+
 const getProfile = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -218,6 +241,7 @@ module.exports = {
   getUsers,
   loginUser,
   followUser,
+  unfollowUser,
   getProfile,
   forgotPassword,
   resetPassword,

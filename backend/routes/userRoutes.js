@@ -1,12 +1,13 @@
 const express = require("express");
 const router = express.Router();
 
-const { createUser, getUsers, loginUser, followUser, getProfile, forgotPassword, resetPassword, searchUsers, updateProfile } = require("../controllers/userController");
+const { createUser, getUsers, loginUser, followUser, unfollowUser, getProfile, forgotPassword, resetPassword, searchUsers, updateProfile } = require("../controllers/userController");
 
 router.post("/", createUser);
 router.get("/", getUsers);
 router.post("/login", loginUser);
 router.post("/follow", followUser);
+router.post("/unfollow", unfollowUser);
 router.get("/profile/:userId", getProfile);
 router.get("/forgot-password", (req, res) => {
     res.send("<h1>🔒 Secure Vault Gateway</h1><p>This is a secure API endpoint for password resets. Please use the <b>InstaVibe</b> frontend interface to request a reset link.</p>");

@@ -6,6 +6,7 @@ import {
     ArrowRight, Lock, Shield, MessageSquare, Trash2, Edit, X
 } from 'lucide-react';
 import CreatePost from './CreatePost';
+import SearchModal from './SearchModal';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -15,6 +16,7 @@ const Feed = ({ user, onLogout, onProfileClick }) => {
     const [pendingTags, setPendingTags] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showCreatePost, setShowCreatePost] = useState(false);
+    const [showSearch, setShowSearch] = useState(false);
     const [commentInput, setCommentInput] = useState({});
     const [selectedPostOptions, setSelectedPostOptions] = useState(null);
     const [editingPost, setEditingPost] = useState(null);
@@ -41,12 +43,12 @@ const Feed = ({ user, onLogout, onProfileClick }) => {
     }, [user._id]);
 
     useEffect(() => {
-        if (selectedPostOptions || editingPost || showCreatePost) {
+        if (selectedPostOptions || editingPost || showCreatePost || showSearch) {
             document.body.classList.add('modal-open');
         } else {
             document.body.classList.remove('modal-open');
         }
-    }, [selectedPostOptions, editingPost, showCreatePost]);
+    }, [selectedPostOptions, editingPost, showCreatePost, showSearch]);
 
     const handleLike = async (postId, isLiked) => {
         try {
@@ -131,7 +133,7 @@ const Feed = ({ user, onLogout, onProfileClick }) => {
     );
 
     return (
-        <div className="dashboard-v3 animate-fade">
+        <>
             {/* TOP NAVIGATION */}
             <nav className="top-nav-v3">
                 <div className="vault-brand">
@@ -148,6 +150,7 @@ const Feed = ({ user, onLogout, onProfileClick }) => {
                 </div>
             </nav>
 
+            <div className="dashboard-v3 animate-fade">
             {/* STORIES SECTION */}
             <div className="stories-header">Inner Circle</div>
             <div className="stories-row-v3">
@@ -307,6 +310,8 @@ const Feed = ({ user, onLogout, onProfileClick }) => {
                 </div>
             )}
 
+            </div>
+
             {/* CREATE POST MODAL */}
             {showCreatePost && (
                 <CreatePost
@@ -316,19 +321,27 @@ const Feed = ({ user, onLogout, onProfileClick }) => {
                 />
             )}
 
+            {/* SEARCH MODAL */}
+            {showSearch && (
+                <SearchModal 
+                    onClose={() => setShowSearch(false)} 
+                    onUserSelect={(userId) => onProfileClick(userId)} 
+                />
+            )}
+
             {/* BOTTOM NAVIGATION */}
             <div className="bottom-nav-v3">
                 <div className="nav-item-v3 active"><Home size={22} /></div>
-                <div className="nav-item-v3"><Search size={22} /></div>
-                <div className="nav-item-v3" onClick={() => setShowCreatePost(true)}>
+                <div className="nav-item-v3" onClick={() => setShowSearch(true)} style={{ cursor: 'pointer' }}><Search size={22} /></div>
+                <div className="nav-item-v3" onClick={() => setShowCreatePost(true)} style={{ cursor: 'pointer' }}>
                     <div style={{ width: '45px', height: '45px', background: 'var(--rainbow-gradient)', borderRadius: '15px', display: 'flex', justifyContent: 'center', alignItems: 'center', color: 'white' }}>
                         <Plus size={24} />
                     </div>
                 </div>
                 <div className="nav-item-v3"><Bell size={22} /></div>
-                <div className="nav-item-v3" onClick={onProfileClick}><User size={22} /></div>
+                <div className="nav-item-v3" onClick={() => onProfileClick(user._id)} style={{ cursor: 'pointer' }}><User size={22} /></div>
             </div>
-        </div>
+        </>
     );
 };
 

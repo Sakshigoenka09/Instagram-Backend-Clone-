@@ -37,6 +37,10 @@ body:not(.dashboard-open) {
   padding: 40px 0;
 }
 
+body.dashboard-open {
+  overflow: hidden;
+}
+
 body.modal-open {
   overflow: hidden;
 }
@@ -333,9 +337,20 @@ body.modal-open {
 /* Dashboard UI - Premium Feed */
 .dashboard-v3 {
   max-width: 500px;
-  margin: 0 auto;
-  padding: 80px 20px 100px;
-  min-height: 100vh;
+  margin: 70px auto 95px auto;
+  padding: 20px;
+  height: calc(100vh - 165px);
+  overflow-y: auto;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.dashboard-v3::after {
+  display: none;
+}
+
+.dashboard-v3::-webkit-scrollbar {
+  display: none; /* Chrome, Safari and Opera */
 }
 
 /* Top Nav */

@@ -5,27 +5,46 @@ import {
     MessageSquare, Edit3, ShieldCheck, Heart, MessageCircle,
     Home, Search, Plus, User, Shield, Video, UserPlus
 } from 'lucide-react';
+import SearchModal from './SearchModal';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
-const Profile = ({ user, onBack, onAddPost }) => {
+const Profile = ({ user, profileUserId, onBack, onAddPost, onProfileClick }) => {
     const [profileData, setProfileData] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [showSearch, setShowSearch] = useState(false);
 
+
+    const fetchProfile = async () => {
+        try {
+            setLoading(true);
+            const { data } = await axios.get(`${API_BASE_URL}/users/profile/${profileUserId}`);
+            setProfileData(data);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const fetchProfile = async () => {
-            try {
-                const { data } = await axios.get(`${API_BASE_URL}/users/profile/${user._id}`);
-                setProfileData(data);
-                setLoading(false);
-            } catch (err) {
-                console.error(err);
-                setLoading(false);
-            }
-        };
         fetchProfile();
-    }, [user._id]);
+    }, [profileUserId]);
+
+    const handleFollowToggle = async (isFollowing) => {
+        try {
+            const endpoint = isFollowing ? 'unfollow' : 'follow';
+            await axios.post(`${API_BASE_URL}/users/${endpoint}`, {
+                followerId: user._id,
+                followingId: profileUserId
+            });
+            // Re-fetch profile data to get updated followers list
+            fetchProfile();
+        } catch (err) {
+            console.error("Could not toggle follow status:", err);
+            alert("Action failed, please try again.");
+        }
+    };
 
     if (loading) return (
         <div className="flex h-screen items-center justify-center bg-dark text-primary">
@@ -35,9 +54,10 @@ const Profile = ({ user, onBack, onAddPost }) => {
 
     const { user: profileUser, posts } = profileData || { user: user, posts: [] };
     const isOwner = profileUser._id === user._id;
+    const isFollowing = profileUser.followers?.some(f => f._id === user._id) || false;
 
     return (
-        <div className="dashboard-v3 animate-fade" style={{ maxWidth: '800px' }}>
+        <>
             {/* TOP BAR */}
             <nav className="top-nav-v3" style={{ maxWidth: '800px' }}>
                 <div className="vault-brand" onClick={onBack} style={{ cursor: 'pointer' }}>
@@ -53,6 +73,7 @@ const Profile = ({ user, onBack, onAddPost }) => {
                 </div>
             </nav>
 
+            <div className="dashboard-v3 animate-fade" style={{ maxWidth: '800px' }}>
             {/* PROFILE HEADER */}
             <div className="profile-header-v3">
                 <div className="profile-avatar-outer" style={{ width: '130px', height: '130px' }}>
@@ -95,7 +116,12 @@ const Profile = ({ user, onBack, onAddPost }) => {
                     {isOwner ? (
                         <button className="profile-btn-v3 btn-secondary-v3">Edit Profile</button>
                     ) : (
-                        <button className="profile-btn-v3 btn-primary-v3">Follow</button>
+                        <button 
+                            className={`profile-btn-v3 ${isFollowing ? 'btn-secondary-v3' : 'btn-primary-v3'}`}
+                            onClick={() => handleFollowToggle(isFollowing)}
+                        >
+                            {isFollowing ? 'Unfollow' : 'Follow'}
+                        </button>
                     )}
                     <button className="profile-btn-v3 btn-secondary-v3">Message</button>
                     <div className="btn-icon-v3">
@@ -137,16 +163,25 @@ const Profile = ({ user, onBack, onAddPost }) => {
             </div>
 
             <div style={{ paddingBottom: '100px' }}></div>
+            </div>
+
+            {/* SEARCH MODAL */}
+            {showSearch && (
+                <SearchModal 
+                    onClose={() => setShowSearch(false)} 
+                    onUserSelect={(userId) => onProfileClick(userId)} 
+                />
+            )}
 
             {/* BOTTOM NAVIGATION */}
             <div className="bottom-nav-v3" style={{ maxWidth: '800px' }}>
                 <div className="nav-item-v3" onClick={onBack}>
                     <Home size={22} />
                 </div>
-                <div className="nav-item-v3">
+                <div className="nav-item-v3" onClick={() => setShowSearch(true)} style={{ cursor: 'pointer' }}>
                     <Search size={22} />
                 </div>
-                <div className="nav-item-v3" onClick={onAddPost}>
+                <div className="nav-item-v3" onClick={onAddPost} style={{ cursor: 'pointer' }}>
                     <div style={{ width: '45px', height: '45px', background: 'rgba(255,255,255,0.1)', borderRadius: '15px', display: 'flex', justifyContent: 'center', alignItems: 'center', color: 'white' }}>
                         <Plus size={24} />
                     </div>
@@ -154,7 +189,7 @@ const Profile = ({ user, onBack, onAddPost }) => {
                 <div className="nav-item-v3">
                     <Heart size={22} />
                 </div>
-                <div className="nav-item-v3 active">
+                <div className="nav-item-v3 active" onClick={() => onProfileClick(user._id)} style={{ cursor: 'pointer' }}>
                     <img
                         src={`https://ui-avatars.com/api/?name=${user.username}&background=random&color=fff`}
                         style={{ width: '24px', height: '24px', borderRadius: '50%', border: '1px solid var(--primary)' }}
@@ -162,7 +197,7 @@ const Profile = ({ user, onBack, onAddPost }) => {
                     />
                 </div>
             </div>
-        </div>
+        </>
     );
 };
 

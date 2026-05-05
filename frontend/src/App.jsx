@@ -6,6 +6,7 @@ import Profile from './components/Profile';
 function App() {
   const [user, setUser] = useState(null);
   const [view, setView] = useState('feed'); // 'feed' or 'profile'
+  const [currentProfileId, setCurrentProfileId] = useState(null);
 
   useEffect(() => {
     const savedUser = localStorage.getItem('user');
@@ -43,13 +44,29 @@ function App() {
             <Feed
               user={user}
               onLogout={handleLogout}
-              onProfileClick={() => setView('profile')}
+              onProfileClick={(profileId) => {
+                const id = typeof profileId === 'string' ? profileId : user._id;
+                setCurrentProfileId(id);
+                setView('profile');
+              }}
             />
           ) : (
             <Profile
               user={user}
-              onBack={() => setView('feed')}
-              onAddPost={() => { setView('feed'); }}
+              profileUserId={currentProfileId || user._id}
+              onBack={() => {
+                setCurrentProfileId(null);
+                setView('feed');
+              }}
+              onAddPost={() => {
+                setCurrentProfileId(null);
+                setView('feed');
+              }}
+              onProfileClick={(profileId) => {
+                const id = typeof profileId === 'string' ? profileId : user._id;
+                setCurrentProfileId(id);
+                // stay in 'profile' view but with new ID
+              }}
             />
           )}
         </>
