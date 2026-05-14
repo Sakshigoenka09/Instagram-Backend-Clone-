@@ -1,9 +1,10 @@
 const express = require("express");
 const router = express.Router();
 
-const { createUser, getUsers, loginUser, followUser, unfollowUser, getProfile, forgotPassword, resetPassword, searchUsers, updateProfile } = require("../controllers/userController");
+const { sendOtp, verifyOtpAndCreateUser, getUsers, loginUser, followUser, unfollowUser, getProfile, forgotPassword, resetPassword, searchUsers, updateProfile, deleteAccount } = require("../controllers/userController");
 
-router.post("/", createUser);
+router.post("/send-otp", sendOtp);
+router.post("/verify-otp", verifyOtpAndCreateUser);
 router.get("/", getUsers);
 router.post("/login", loginUser);
 router.post("/follow", followUser);
@@ -16,5 +17,6 @@ router.post("/forgot-password", forgotPassword);
 router.post("/reset-password", resetPassword);
 router.get("/search", searchUsers);
 router.put("/profile/:userId", updateProfile);
+router.delete("/:userId", deleteAccount);
 
 module.exports = router;

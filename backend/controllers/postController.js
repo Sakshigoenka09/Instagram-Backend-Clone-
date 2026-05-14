@@ -69,7 +69,7 @@ const getFeed = async (req, res) => {
 
         if (userId) {
             const user = await User.findById(userId);
-            if (user && user.following.length > 0) {
+            if (user) {
                 // Return posts from self AND people followed
                 query = { user: { $in: [...user.following, userId] } };
             }

@@ -54,6 +54,7 @@ function App() {
             <Profile
               user={user}
               profileUserId={currentProfileId || user._id}
+              onLogout={handleLogout}
               onBack={() => {
                 setCurrentProfileId(null);
                 setView('feed');

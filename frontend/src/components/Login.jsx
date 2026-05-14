@@ -1,15 +1,40 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Mail, Lock, User as UserIcon, ShieldCheck, Eye, EyeOff, ArrowLeft, ArrowRight, Sparkles, Chrome, AlertCircle, CheckCircle2, X } from 'lucide-react';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const Login = ({ onLoginSuccess }) => {
-    const [mode, setMode] = useState('login'); // 'login', 'register', 'forgot', 'reset'
-    const [formData, setFormData] = useState({ username: '', email: '', password: '', resetToken: '', newPassword: '' });
+    const [mode, setMode] = useState('login'); // 'login', 'register', 'verify-otp', 'forgot', 'reset'
+    const [formData, setFormData] = useState({ username: '', email: '', password: '', resetToken: '', newPassword: '', otp: '' });
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [toast, setToast] = useState({ show: false, message: '', type: '' }); // type: 'error' or 'success'
+    const [timer, setTimer] = useState(0);
+
+    useEffect(() => {
+        let interval;
+        if (timer > 0 && mode === 'verify-otp') {
+            interval = setInterval(() => {
+                setTimer((prev) => prev - 1);
+            }, 1000);
+        }
+        return () => clearInterval(interval);
+    }, [timer, mode]);
+
+    const handleResendOtp = async () => {
+        if (timer > 0) return;
+        setLoading(true);
+        try {
+            await axios.post(`${API_BASE_URL}/users/send-otp`, { username: formData.username, email: formData.email, password: formData.password });
+            setTimer(60);
+            showToast('Verification code resent to email!', 'success');
+        } catch (err) {
+            showToast(err.response?.data?.error || 'Failed to resend code', 'error');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const showToast = (message, type) => {
         setToast({ show: true, message, type });
@@ -27,7 +52,17 @@ const Login = ({ onLoginSuccess }) => {
                 localStorage.setItem('user', JSON.stringify(data.user));
                 onLoginSuccess(data.user);
             } else if (mode === 'register') {
-                await axios.post(`${API_BASE_URL}/users/`, { username: formData.username, email: formData.email, password: formData.password });
+                await axios.post(`${API_BASE_URL}/users/send-otp`, { username: formData.username, email: formData.email, password: formData.password });
+                setMode('verify-otp');
+                setTimer(60);
+                showToast('Verification code sent to email!', 'success');
+            } else if (mode === 'verify-otp') {
+                await axios.post(`${API_BASE_URL}/users/verify-otp`, {
+                    username: formData.username,
+                    email: formData.email,
+                    password: formData.password,
+                    otp: formData.otp
+                });
                 setMode('login');
                 showToast('Vault created! Please sign in.', 'success');
             } else if (mode === 'forgot') {
@@ -111,12 +146,12 @@ const Login = ({ onLoginSuccess }) => {
                             </div>
                         )}
 
-                        {/* EMAIL / IDENTITY FIELD (Show in Reset mode as well, but labeled) */}
+                        {/* EMAIL / IDENTITY FIELD */}
                         <div className="input-group-v3">
                             <label className="input-label-v3">
-                                {mode === 'reset' ? 'Account Registry' : 'Identity'}
+                                {mode === 'reset' || mode === 'verify-otp' ? 'Account Registry' : 'Identity'}
                             </label>
-                            <div className={`input-container-v3 ${mode === 'reset' ? 'opacity-50 pointer-events-none' : ''}`}>
+                            <div className={`input-container-v3 ${mode === 'reset' || mode === 'verify-otp' ? 'opacity-50 pointer-events-none' : ''}`}>
                                 <Mail className="input-icon-v3" size={18} />
                                 <input
                                     type="text"
@@ -124,7 +159,7 @@ const Login = ({ onLoginSuccess }) => {
                                     value={formData.email}
                                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                     required
-                                    readOnly={mode === 'reset'}
+                                    readOnly={mode === 'reset' || mode === 'verify-otp'}
                                 />
                             </div>
                         </div>
@@ -152,7 +187,22 @@ const Login = ({ onLoginSuccess }) => {
                             </div>
                         )}
 
-                        {/* RESET PASSWORD FIELDS */}
+                        {/* VERIFY OTP FIELDS */}
+                        {mode === 'verify-otp' && (
+                            <div className="input-group-v3">
+                                <label className="input-label-v3">Verification Code</label>
+                                <div className="input-container-v3">
+                                    <ShieldCheck className="input-icon-v3" size={18} />
+                                    <input
+                                        type="text"
+                                        placeholder="Enter 6-digit code"
+                                        value={formData.otp}
+                                        onChange={(e) => setFormData({ ...formData, otp: e.target.value })}
+                                        required
+                                    />
+                                </div>
+                            </div>
+                        )}
                         {mode === 'reset' && (
                             <>
                                 <div className="input-group-v3">
@@ -197,17 +247,36 @@ const Login = ({ onLoginSuccess }) => {
 
                         {/* SUBMIT BUTTON */}
                         <button type="submit" className="submit-btn-v3" disabled={loading}>
-                            {loading ? 'Validating Vault...' : (
+                            {loading ? (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <div className="vault-loader"></div>
+                                    {mode === 'register' ? 'Sending Code...' : mode === 'verify-otp' ? 'Verifying...' : 'Validating...'}
+                                </div>
+                            ) : (
                                 <>
-                                    {mode === 'login' ? 'Sign In' : mode === 'register' ? 'Sign Up' : mode === 'forgot' ? 'Get Reset Link' : 'Secure Vault'}
+                                    {mode === 'login' ? 'Sign In' : mode === 'register' ? 'Verify Identity' : mode === 'verify-otp' ? 'Create Vault' : mode === 'forgot' ? 'Get Reset Link' : 'Secure Vault'}
                                     <ArrowRight size={18} />
                                 </>
                             )}
                         </button>
                     </form>
 
-                    {/* Back to login for forgot/reset modes */}
-                    {(mode === 'forgot' || mode === 'reset') && (
+                    {/* Resend OTP for verify-otp mode */}
+                    {mode === 'verify-otp' && (
+                        <div className="auth-footer-v3" style={{ marginTop: '15px' }}>
+                            Didn't receive code?{' '}
+                            <span 
+                                className="footer-highlight" 
+                                style={{ opacity: timer > 0 ? 0.5 : 1, cursor: timer > 0 ? 'not-allowed' : 'pointer' }}
+                                onClick={handleResendOtp}
+                            >
+                                {timer > 0 ? `Resend in ${timer}s` : 'Resend Code'}
+                            </span>
+                        </div>
+                    )}
+
+                    {/* Back to login for forgot/reset/verify modes */}
+                    {(mode === 'forgot' || mode === 'reset' || mode === 'verify-otp') && (
                         <div className="auth-footer-v3" style={{ marginTop: '20px' }}>
                             Remembered? <span className="footer-highlight" onClick={() => setMode('login')}>Sign In</span>
                         </div>

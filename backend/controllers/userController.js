@@ -2,9 +2,10 @@ const User = require("../models/userModel");
 const Post = require("../models/postModel");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const { sendResetEmail } = require("../utils/emailService");
+const { sendResetEmail, sendRegistrationOtp } = require("../utils/emailService");
+const Otp = require("../models/otpModel");
 
-const createUser = async (req, res) => {
+const sendOtp = async (req, res) => {
   try {
     const { username, email, password } = req.body;
     if (!username || !email || !password) {
@@ -16,12 +17,51 @@ const createUser = async (req, res) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) return res.status(400).json({ error: "Invalid identity (email) format" });
 
+    const existingUser = await User.findOne({ $or: [{ email: email.toLowerCase() }, { username }] });
+    if (existingUser) {
+      return res.status(400).json({ error: "Identity or username already in use" });
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    await Otp.findOneAndUpdate(
+      { email: email.toLowerCase() },
+      { otp, createdAt: Date.now() },
+      { upsert: true, new: true }
+    );
+
+    const emailSent = await sendRegistrationOtp(email.toLowerCase(), otp);
+    if (!emailSent) {
+      return res.status(500).json({ error: "Failed to send verification code. Try again." });
+    }
+
+    return res.status(200).json({ message: "Verification code sent to email" });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Something went wrong" });
+  }
+};
+
+const verifyOtpAndCreateUser = async (req, res) => {
+  try {
+    const { username, email, password, otp } = req.body;
+    if (!username || !email || !password || !otp) {
+      return res.status(400).json({ error: "All fields are required" });
+    }
+
+    const otpRecord = await Otp.findOne({ email: email.toLowerCase(), otp });
+    if (!otpRecord) {
+      return res.status(400).json({ error: "Invalid or expired verification code" });
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = await User.create({
       username,
-      email,
+      email: email.toLowerCase(),
       password: hashedPassword,
     });
+
+    await Otp.deleteOne({ _id: otpRecord._id });
 
     return res.status(201).json(user);
   } catch (err) {
@@ -60,8 +100,8 @@ const loginUser = async (req, res) => {
     }).select("+password");
 
     if (!user) {
-      return res.status(400).json({
-        error: "Invalid email or password",
+      return res.status(404).json({
+        error: "No user exists with this email or username",
       });
     }
 
@@ -236,8 +276,73 @@ const updateProfile = async (req, res) => {
   }
 };
 
+const deleteAccount = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { password } = req.body;
+
+    if (!password) {
+      return res.status(400).json({ error: "Password is required to delete account" });
+    }
+
+    const user = await User.findById(userId).select("+password");
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ error: "Incorrect password" });
+    }
+
+    // 1. Remove user from the 'followers' array of users they are following
+    if (user.following && user.following.length > 0) {
+      await User.updateMany(
+        { _id: { $in: user.following } },
+        { $pull: { followers: userId } }
+      );
+    }
+
+    // 2. Remove user from the 'following' array of users who follow them
+    if (user.followers && user.followers.length > 0) {
+      await User.updateMany(
+        { _id: { $in: user.followers } },
+        { $pull: { following: userId } }
+      );
+    }
+
+    // 3. Delete all posts created by the user
+    await Post.deleteMany({ user: userId });
+
+    // 4. Remove user's likes, comments, and tags from ALL other posts
+    await Post.updateMany(
+      {},
+      {
+        $pull: {
+          likes: userId,
+          comments: { user: userId },
+          tags: { user: userId }
+        }
+      }
+    );
+
+    // 5. Delete OTPs if any exist
+    await Otp.deleteMany({ email: user.email.toLowerCase() });
+
+    // 6. Delete the actual user document
+    await User.findByIdAndDelete(userId);
+
+    res.status(200).json({ message: "Account permanently deleted" });
+  } catch (err) {
+    console.error("Error deleting account:", err);
+    res.status(500).json({ error: "Failed to delete account" });
+  }
+};
+
 module.exports = {
-  createUser,
+  sendOtp,
+  verifyOtpAndCreateUser,
   getUsers,
   loginUser,
   followUser,
@@ -246,5 +351,6 @@ module.exports = {
   forgotPassword,
   resetPassword,
   searchUsers,
-  updateProfile
+  updateProfile,
+  deleteAccount
 };
